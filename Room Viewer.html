@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Room Viewer</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden; /* 溢出隐藏 */
+        }
+
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            color: #FFFFFF;
+            font-size: 20px;
+            margin-top: -30px;
+            margin-left: -40px;
+        }
+    </style>
+    <script src="libs/three-r93.js"></script>
+    <script src="libs/Detector.js"></script>
+    <script src="libs/dat.gui.min.js"></script>
+    <script src="libs/stats.min.js"></script>
+    <script src="libs/RoomViewer.js"></script>
+    <script src="libs/GLTFLoader.js"></script>
+
+</head>
+<body>
+<p id="loading">loading......</p>
+<script>
+
+    let scene, camera, renderer, controls;
+    let stats = initStats();
+
+    /* 场景 */
+    function initScene() {
+
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x050505);
+
+    }
+
+    /* 相机 */
+    function initCamera() {
+
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000);
+        camera.position.set(0, 5, -5);
+        camera.lookAt(new THREE.Vector3(0, 1, 0));
+
+    }
+
+    /* 渲染器 */
+    function initRender() {
+
+        renderer = new THREE.WebGLRenderer({antialias: true});
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        document.body.appendChild(renderer.domElement);
+
+    }
+
+    /* 灯光 */
+    function initLight() {
+
+// Object:Light:1
+        let light1 = new THREE.PointLight("white", .8);
+        light1.position.set(0, 3, 0);
+        light1.castShadow = true;
+        light1.shadow.camera.near = 2.5;
+        scene.add(light1);
+
+// Object:Light:2
+        let light2 = new THREE.AmbientLight("white", .15);
+        light2.position.set(10, 2, 0);
+        scene.add(light2);
+
+    }
+
+    /* 控制器 */
+    function initControls() {
+
+        /* 第一人称控件 */
+        controls = new THREE.FirstPersonControls(camera);
+        /* 属性参数默认 */
+        controls.enabled = true;
+        controls.lookSpeed = 0.05; //鼠标移动查看的速度
+        controls.movementSpeed = 8 //相机移动速度
+        controls.noFly = false;
+        controls.constrainVertical = true; //约束垂直
+        controls.verticalMin = 1.0;
+        controls.verticalMax = 2.0;
+        controls.lon = 0; //进入初始视角x轴的角度
+        controls.lat = 0; //初始视角进入后y轴的角度
+
+    }
+
+
+    /* 场景中的内容 */
+    function initContent() {
+
+        // 加载 glTF 格式的模型
+        let loader = new THREE.GLTFLoader();/*实例化加载器*/
+
+        loader.load('gltf/my_kitchen/scene.gltf',function (obj) {
+
+            console.log(obj);
+            obj.scene.position.y = 1;
+            scene.add(obj.scene);
+            document.getElementById('loading').style.display = 'none';
+
+        },function (xhr) {
+
+            console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
+
+        },function (error) {
+
+            console.log('load error!'+error.getWebGLErrorMessage());
+
+        })
+
+    }
+
+
+    /* 性能插件 */
+    function initStats() {
+
+        let stats = new Stats();
+
+        document.body.appendChild(stats.domElement);
+
+        return stats;
+
+    }
+
+    /* 窗口变动触发 */
+    function onWindowResize() {
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        controls.handleResize();
+
+    }
+
+    let clock = new THREE.Clock();
+
+    /* 数据更新 */
+    function update() {
+
+        stats.update();
+
+        controls.update(clock.getDelta());
+
+    }
+
+    /* 初始化 */
+    function init() {
+
+        initScene();
+        initCamera();
+        initRender();
+        initLight();
+        initControls();
+        initContent();
+
+        /* 监听事件 */
+        window.addEventListener('resize', onWindowResize, false);
+
+    }
+
+    /* 循环渲染 */
+    function animate() {
+
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+        update();
+
+    }
+
+    /* 初始加载 */
+    (function () {
+        console.log("three init start...");
+
+        init();
+        animate();
+
+        console.log("three init end...");
+    })();
+
+</script>
+</body>
+</html>
